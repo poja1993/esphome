@@ -1,0 +1,103 @@
+esphome:
+    name: test-1
+    comment: Test ESP8266 controller
+
+esp8266:
+  board: d1_mini
+
+# Enable logging
+logger:
+
+ota:
+  password: !secret ota_pwd
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_pwd
+  fast_connect: true
+  power_save_mode: high
+  # Enable fallback hotspot (captive portal) in case wifi connection fails
+  ap:
+    ssid: "Test-1 Fallback Hotspot"
+    password: !secret fallback_pwd
+
+captive_portal:
+
+globals:
+   - id: counter
+     type: int[2]
+     restore_value: no
+     initial_value: '{0,0}' 
+
+script:
+  - id: manage_deep_sleep
+    parameters:
+      sensor_n: int
+    then:
+      - if:
+          condition:
+            mqtt.connected:
+          then:
+            - lambda: |-
+                id(counter)[sensor_n - 1] += 1;
+                for (int i=0; i < sizeof(id(counter))/sizeof(*id(counter)); i++)
+                {
+                  ESP_LOGD("manage_deep_sleep", "Sensor: %d, Global counter: %d", i, id(counter)[i]);
+                }
+            - if:
+                condition:
+                  lambda: |-
+                    bool tmp = true;
+                    for (int i=0; i < sizeof(id(counter))/sizeof(*id(counter)); i++)
+                    {
+                      if (id(counter)[i] == 0)
+                      {
+                        tmp = false;
+                      }
+                    }
+                    return tmp;
+                then:
+                  - deep_sleep.allow: deep_sleep_1
+                else:
+                  - deep_sleep.prevent: deep_sleep_1            
+          else:
+            deep_sleep.prevent: deep_sleep_1
+
+sensor:
+  - platform: uptime
+    name: Uptime Sensor
+    unit_of_measurement: "s"
+    update_interval: 30s
+    on_value:
+      then:
+        - script.execute: 
+            id: manage_deep_sleep
+            sensor_n: 1
+
+  - platform: wifi_signal
+    name: WiFi Sensor
+    update_interval: 10s
+    filters:
+      - sliding_window_moving_average:
+          window_size: 10
+          send_every: 10
+          send_first_at: 10
+    on_value:
+      then:
+        - script.execute: 
+            id: manage_deep_sleep
+            sensor_n: 2
+            
+deep_sleep:
+  run_duration: 10s
+  sleep_duration: 60s
+  id: deep_sleep_1
+
+mqtt:
+  broker: !secret mqtt_ip
+  port: !secret mqtt_port
+  username: !secret mqtt_user
+  password: !secret mqtt_pwd
+  birth_message:
+  will_message:
+  discovery: true

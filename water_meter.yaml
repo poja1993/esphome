@@ -26,8 +26,14 @@ captive_portal:
 binary_sensor:
   - platform: gpio
     pin: GPIO0
-    name: "Water Meter Input"
+    name: Water Meter Input
     
+sensor:
+  - platform: uptime
+    name: Device Uptime
+    unit_of_measurement: "s"
+    update_interval: 1h
+
 mqtt:
   broker: !secret mqtt_ip
   port: !secret mqtt_port

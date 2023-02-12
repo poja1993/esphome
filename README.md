@@ -25,3 +25,6 @@ In Home Assistant I have the following setup:
         "{{ states('counter.water_meter') }}"
 ```
 * Utility helper to track daily/monthly consumption
+
+## test_1.yaml
+Playground for lambda functions, deep sleep & Co.
