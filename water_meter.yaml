@@ -27,6 +27,8 @@ binary_sensor:
   - platform: gpio
     pin: GPIO0
     name: Water Meter Input
+    filters:
+      - delayed_on_off: 0.2s
     
 sensor:
   - platform: uptime
