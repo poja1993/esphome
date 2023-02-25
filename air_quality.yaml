@@ -13,56 +13,73 @@ esphome:
 esp8266:
   board: d1_mini
 
-# Enable logging
+# Disable logging
 logger:
     baud_rate: 0
 
 ota:
-  password: blabla #!secret ota_pwd
+  password: !secret ota_pwd
 
 wifi:
-  ssid: blabla #!secret wifi_ssid
-  password: blablablablablabla #!secret wifi_pwd
+  ssid: !secret wifi_ssid
+  password: !secret wifi_pwd
   fast_connect: true
   power_save_mode: high
   # Enable fallback hotspot (captive portal) in case wifi connection fails
   ap:
     ssid: $friendlydevicename Fallback Hotspot
-    password: blablablablablabla #!secret fallback_pwd
+    password: !secret fallback_pwd
 
 captive_portal:
 
 mqtt:
-  broker: 10.10.10.10 #!secret mqtt_ip
-  port: 1 #!secret mqtt_port
-  username: blabla #!secret mqtt_user
-  password: blabla #!secret mqtt_pwd
+  broker: !secret mqtt_ip
+  port: !secret mqtt_port
+  username: !secret mqtt_user
+  password: !secret mqtt_pwd
   birth_message:
   will_message:
   discovery: true
+  on_message: # Use retained switch command to turn on ota_mode
+    topic: $devicename/switch/ota_mode/command
+    payload: "ON"
+    then:
+      - switch.turn_on: ota_mode
 
 deep_sleep:
-  run_duration: 10s
+  run_duration: 30s
   sleep_duration: 15min
   id: deep_sleep_1
   
 uart:
-  rx_pin: D2
+  rx_pin: GPIO0
   baud_rate: 9600
 
+# Create switch to control OTA Mode
+# This will also turn on buil-in LED when Mode is active
+switch:
+  - platform: gpio
+    pin: 2
+    name: "OTA Mode"
+    inverted: true
+    id: ota_mode
+    restore_mode: ALWAYS_OFF
+    command_retain: true
+
 sensor:
-  - platform: pm1006
-    pm_2_5:
+ - platform: pm1006
+   pm_2_5:
       name: "Particulate Matter 2.5µm Concentration"
       filters:
         - sliding_window_moving_average:
-            window_size: 10
-            send_every: 10
-            send_first_at: 10
+            window_size: 5
+            send_every: 5
+            send_first_at: 5
       on_value:
         then:
           - if:
               condition:
-                mqtt.connected:
+                - mqtt.connected:
+                - switch.is_off: ota_mode
               then:
                 - deep_sleep.allow: deep_sleep_1
