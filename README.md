@@ -26,5 +26,9 @@ In Home Assistant I have the following setup:
 ```
 * Utility helper to track daily/monthly consumption
 
+## air_quality.yaml
+As reported [HERE](https://style.oversubstance.net/2021/08/diy-use-an-ikea-vindriktning-air-quality-sensor-in-home-assistant-with-esphome/), upgrade an Ikea VINDRIKTNING to have network capability.  
+A MQTT switch is used to prevent deep sleep with ESP8266 in order to perform OTA upddates.
+
 ## test_1.yaml
 Playground for lambda functions, deep sleep & Co.
